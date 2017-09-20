@@ -5,6 +5,20 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 
+
+/**
+ * Prepares variables for `field.html.twig`.
+ */
+function collage_preprocess_field(&$variables) {
+  $element = $variables['element'];
+
+  if ($element['#formatter'] == 'bricks_nested') {
+    foreach (Element::children($element) as $brick_delta) {
+      $element[$brick_delta]['#media']->__set('collage_parent_entity', $variables['element']['#object']);
+    }
+  }
+}
+
 /**
  * Implements hook_field_widget_WIDGET_TYPE_form_alter().
  */
