@@ -1,0 +1,12 @@
+widget:
+  css:
+    base:
+      css/collage.widget.css: {}
+  js:
+    js/collage.widget.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/jquery.ui.tabs
+    - core/jquery.ui.resizable
+    - core/jquery.ui.draggable

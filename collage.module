@@ -1,0 +1,15 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
+/**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormStateInterface $form_state, $context) {
+  foreach (Element::children($element['entities']) as $delta) {
+    $widget_row = &$element['entities'][$delta];
+    $widget_row['options']['collage'] = [
+      '#type' => 'textarea'
+    ];
+  }
+}

@@ -1,0 +1,7 @@
+collage.modal:
+  path: 'collage/modal/{entity_type}/{field_name}/{entity_id}/{collage_id}'
+  defaults:
+    _title: 'Modal'
+    _controller: '\Drupal\collage\Controller\CollageModal::modal'
+  requirements:
+    _permission: 'access content'
