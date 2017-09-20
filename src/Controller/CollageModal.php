@@ -10,15 +10,27 @@ namespace Drupal\collage\Controller;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
+use Drupal\Core\Ajax\SettingsCommand;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Component\Utility\Html;
 
 class CollageModal extends ControllerBase {
 
   public function modal($entity_type, $entity_id, $field_name, $collage_id) {
+    $collage = entity_load('media', $collage_id);
     $bricks = $this->getCollageBricks($entity_type, $entity_id, $field_name, $collage_id);
-    $current_theme = \Drupal::config('system.theme')->get('default');
-    $break_points = \Drupal::service('breakpoint.manager')->getBreakpointsByGroup($current_theme);
+    $type_configuration = $bundle_label = \Drupal::config('media_entity.bundle.' . $collage->bundle())->get('type_configuration');
+    $breakpoints_text = $type_configuration['collage_breakpoints'];
+    $breakpoints = [];
+    foreach (explode("\n", $breakpoints_text) as $row) {
+      $row_exploded = explode('|', $row);
+      $breakpoints[Html::getClass($row_exploded[0])] = [
+        'label' => $row_exploded[0],
+        'id' => Html::getClass($row_exploded[0]),
+        'min_width' => (int) $row_exploded[1],
+        'columns' => (int) $row_exploded[2],
+      ];
+    }
 
     $options = [
       'dialogClass' => 'popup-dialog-class',
@@ -36,47 +48,52 @@ class CollageModal extends ControllerBase {
       ]
     ];
 
-    foreach ($break_points as $break_point_id => $break_point) {
-
-      $media_query = $break_point->getMediaQuery();
-      $media_query_exploded = explode('min-width:', $media_query);
-      $min_width = trim(explode(')', $media_query_exploded[1])[0]);
-
-      if (!$min_width) {
-        $min_width = '320px';
-      }
-
-      $modal_contents['tabs'][$break_point_id] = [
-        '#markup' => $break_point->getLabel(),
-        '#prefix' => '<li><a href="#' . $break_point_id . '">',
+    foreach ($breakpoints as $breakpoint) {
+      $modal_contents['tabs'][$breakpoint['id']] = [
+        '#markup' => $breakpoint['label'],
+        '#prefix' => '<li><a href="#' . $breakpoint['id'] . '">',
         '#suffix' => '</a></li>'
       ];
 
-      $modal_contents[$break_point_id] = [
+      $modal_contents[$breakpoint['id']] = [
         '#type' => 'container',
         '#attributes' => [
           'class' => ['collage-widget-tab'],
-          'id' => $break_point_id,
+          'id' => $breakpoint['id'],
         ],
         'inner' => [
           '#type' => 'container',
           '#attributes' => [
             'class' => ['collage-widget-tab-inner'],
-            'style' => 'width: ' . $min_width . ';'
+            'data-breakpoint' => $breakpoint['id']
           ],
         ]
       ];
 
       foreach ($bricks as $brick) {
-        $modal_contents[$break_point_id]['inner']['collage-item-' . $break_point_id . '-' . $brick->{$field_name . '_target_id'}] = [
-          '#prefix' => '<div class="collage-item ui-widget-content" id="collage-item-' . $break_point_id . '-' . $brick->{$field_name . '_target_id'} . '">',
-          '#markup' => '<span class="ui-widget-header">collage-item: ' . $brick->{$field_name . '_target_id'} . '</span>',
-          '#suffix' => '</div>'
+        $modal_contents[$breakpoint['id']]['inner']['collage-item-' . $breakpoint['id'] . '-' . $brick->entity->id()] = [
+          '#markup' => '<span class="ui-widget-header">' . $brick->entity->name->value . '</span>',
+          '#type' => 'container',
+          '#attributes' => [
+            'class' => ['collage-item', 'ui-widget-content'],
+            'data-collage-item-id' => $brick->entity->id(),
+            'data-breakpoint' => $breakpoint['id'],
+            'id' => 'collage-item-' . $breakpoint['id'] . '-' . $brick->entity->id()
+          ]
         ];
       }
     }
 
     $response = new AjaxResponse();
+    $response->addCommand(new SettingsCommand([
+      'collage_breakpoints' => $breakpoints,
+      'collage_context' => [
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id,
+        'field_name' => $field_name,
+        'collage_id' => $collage_id
+      ]
+    ], TRUE));
     $response->addCommand(new OpenModalDialogCommand(t('Edit collage'), $modal_contents, $options));
 
     return $response;
@@ -103,6 +120,7 @@ class CollageModal extends ControllerBase {
       }
 
       if (!$stopped && $started) {
+        $row->entity = entity_load('media', $row->{$field_name . '_target_id'});
         $children[] = $row;
       }
 

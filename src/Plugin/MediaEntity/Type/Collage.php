@@ -35,10 +35,12 @@ class Collage extends MediaTypeBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $current_theme = \Drupal::config('system.theme')->get('default');
-    $break_points = \Drupal::service('breakpoint.manager')->getBreakpointsByGroup($current_theme);
-
-
+    $form['collage_breakpoints'] = [
+      '#type' => 'textarea',
+      '#title' => 'Breakpoints',
+      '#default_value' => empty($this->configuration['collage_breakpoints']) ? NULL : $this->configuration['collage_breakpoints'],
+      '#description' => 'Name|Min-width|Columns'
+    ];
 
     return $form;
   }

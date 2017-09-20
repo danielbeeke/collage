@@ -1,8 +1,10 @@
 .collage-item {
+    box-sizing: border-box;
     width: 100px;
     height: 100px;
-    background-color: blue;
-    opacity: .4;
+    background-color: rgba(255, 0, 255, .5);
+    color: black;
+    overflow: hidden;
 }
 
 .collage-widget-tab {

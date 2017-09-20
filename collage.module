@@ -37,9 +37,9 @@ function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormState
           'class' => ['collage-settings'],
           'data-entity-type' => $entity->getEntityTypeId(),
           'data-entity-id' => $entity->id(),
-          'field-name' => $field_name,
-          'collage-id' => $current_collage_id,
-          'collage-item-id' => $widget_row['#entity']->id(),
+          'data-field-name' => $field_name,
+          'data-collage-id' => $current_collage_id,
+          'data-collage-item-id' => $widget_row['#entity']->id(),
         ],
         '#default_value' => isset($context['items'][$delta]->options['collage']) ? $context['items'][$delta]->options['collage'] : NULL,
       ];
