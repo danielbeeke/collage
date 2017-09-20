@@ -51,13 +51,28 @@ class Collage extends DsFieldBase {
       }
     }
 
-    $css = '';
+    $css = '.collage-wrapper { position: relative; width: 100%; float: left; } [data-collage-id] { position: absolute; background-color: red; overflow: hidden; } ' . "\n";
 
     foreach ($breakpoints as $breakpoint) {
+      $highest = 0;
+
+      foreach ($settings_map as $media_id => $item) {
+        if (isset($item->{$breakpoint['id']})) {
+          $possible_higher = $item->{$breakpoint['id']}->top + $item->{$breakpoint['id']}->height;
+          $highest = max($highest, $possible_higher);
+        }
+      }
+
       $css .= '@media screen and (min-width: ' . $breakpoint['min_width'] . "px) {\n";
+      $ratio = 100 / $breakpoint['columns'] * $highest;
+      $css .= '  #' . $wrapper_id . ':after { content: ""; float: left; width: 100%; padding-bottom: ' . $ratio . '%; }' . "\n";
 
       foreach ($settings_map as $media_id => $item) {
         $css .= '  #' . $wrapper_id . ' [data-collage-id="' . $media_id . '"] {' . "\n";
+        $css .= "  top: " .  (100 / $highest * $item->{$breakpoint['id']}->top) . "%;\n";
+        $css .= "  left: " .  (100 / $breakpoint['columns'] * $item->{$breakpoint['id']}->left) . "%;\n";
+        $css .= "  width: " .  (100 / $breakpoint['columns'] * $item->{$breakpoint['id']}->width) . "%;\n";
+        $css .= "  height: " .  (100 / $highest * $item->{$breakpoint['id']}->height) . "%;\n";
         $css .= "  }\n";
       }
 
