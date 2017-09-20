@@ -3,6 +3,8 @@
   Drupal.behaviors.collage = {
     attach: function (context, settings) {
 
+      // $('.collage-settings', context).hide();
+
       if ($(context).hasClass('collage-widget-wrapper')) {
         $('.ui-tabs', context).tabs();
 

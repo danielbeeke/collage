@@ -2,14 +2,79 @@
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
+use Drupal\Core\Link;
+
 /**
  * Implements hook_field_widget_WIDGET_TYPE_form_alter().
  */
 function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormStateInterface $form_state, $context) {
+  $collage_started = FALSE;
+  $current_collage_id = NULL;
+  $current_collage_depth = NULL;
+
+  $build_info = $form_state->getBuildInfo();
+  $callback_object = $build_info['callback_object'];
+  $entity = $callback_object->getEntity();
+  $field_name = $context['items']->getFieldDefinition()->getName();
+
   foreach (Element::children($element['entities']) as $delta) {
     $widget_row = &$element['entities'][$delta];
-    $widget_row['options']['collage'] = [
-      '#type' => 'textarea'
-    ];
+
+    hide($widget_row['options']['view_mode']);
+    hide($widget_row['options']['css_class']);
+
+    if ($widget_row['depth']['#default_value'] < $current_collage_depth) {
+      $collage_started = FALSE;
+      $current_collage_depth = NULL;
+      $current_collage_id = NULL;
+    }
+
+    if ($collage_started == TRUE) {
+      $widget_row['options']['collage'] = [
+        '#type' => 'textarea',
+        '#attributes' => [
+          'class' => ['collage-settings'],
+          'data-entity-type' => $entity->getEntityTypeId(),
+          'data-entity-id' => $entity->id(),
+          'field-name' => $field_name,
+          'collage-id' => $current_collage_id,
+          'collage-item-id' => $widget_row['#entity']->id(),
+        ],
+        '#default_value' => isset($context['items'][$delta]->options['collage']) ? $context['items'][$delta]->options['collage'] : NULL,
+      ];
+    }
+
+    if ($widget_row['#entity']->bundle() == 'collage') {
+      $collage_started = TRUE;
+      $current_collage_id = $widget_row['#entity']->id();
+      $current_collage_depth = $widget_row['depth']['#default_value'];
+
+      $link_url = Url::fromRoute('collage.modal', [
+        'entity_type' => $entity->getEntityTypeId(),
+        'entity_id' => $entity->id(),
+        'field_name' => $field_name,
+        'collage_id' => $current_collage_id,
+      ]);
+
+      $link_url->setOptions([
+        'attributes' => [
+          'class' => ['use-ajax', 'button', 'button--small'],
+          'data-dialog-type' => 'modal',
+        ]
+      ]);
+
+      $widget_row['options']['collage'] = [
+        '#type' => 'container',
+        '#attached' => [
+          'library' => ['collage/widget']
+        ],
+        'link' => [
+          '#type' => 'markup',
+          '#markup' => Link::fromTextAndUrl(t('Edit collage'), $link_url)->toString(),
+          '#attached' => ['library' => ['core/drupal.dialog.ajax']]
+        ]
+      ];
+    }
   }
 }

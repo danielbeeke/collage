@@ -7,12 +7,11 @@
 
 .collage-widget-tab {
     position: relative;
-    width: 100%;
+    width: 95%;
 }
 
 .collage-widget-tab-inner {
     position: relative;
-    width: 1000px;
     min-height: 70vh;
     border: 1px solid black;
 }
