@@ -5,3 +5,10 @@ collage.modal:
     _controller: '\Drupal\collage\Controller\CollageModal::modal'
   requirements:
     _permission: 'access content'
+collage.entity:
+  path: 'collage/modal/{entity_type}/{entity_id}/{view_mode}'
+  defaults:
+    _title: 'Modal'
+    _controller: '\Drupal\collage\Controller\CollageModal::viewMode'
+  requirements:
+    _permission: 'access content'

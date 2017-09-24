@@ -19,6 +19,7 @@
                 left: parseInt($(item).css('left')) / breakpoint.oneColumn,
                 width: parseInt($(item).css('width')) / breakpoint.oneColumn,
                 height: parseInt($(item).css('height')) / breakpoint.oneColumn,
+                zIndex: $(item).css('z-index')
               };
 
               if (!data[item.dataset.collageItemId]) { data[item.dataset.collageItemId] = {} }
@@ -50,6 +51,7 @@
                 left: itemData.left * breakpointData.oneColumn + 'px',
                 width: itemData.width * breakpointData.oneColumn + 'px',
                 height: itemData.height * breakpointData.oneColumn + 'px',
+                zIndex: itemData.zIndex
               });
             })
           });
@@ -79,7 +81,29 @@
             stop: function () {
               updateTextFields();
             }
-          });
+          })
+          .on('mousedown', function () {
+            var clickedItem = this;
+            var zIndexStack = [];
+            $('.collage-item', breakpoint.tab).each(function (itemDelta, item) {
+              if (item !== clickedItem && $.isNumeric($(item).css('z-index'))) {
+                zIndexStack.push({
+                  item: item,
+                  zIndex: $(item).css('z-index')
+                })
+              }
+            });
+
+            zIndexStack.sort(function (a, b) {
+              return a.zIndex.localeCompare(b.zIndex);
+            });
+
+            $(zIndexStack).each(function (zIndexDelta, zIndexItem) {
+              $(zIndexItem.item).css('z-index', zIndexDelta)
+            });
+
+            $(clickedItem).css('z-index', zIndexStack.length + 1);
+          })
         });
 
         initSavedData();

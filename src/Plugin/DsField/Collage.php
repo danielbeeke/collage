@@ -73,6 +73,7 @@ class Collage extends DsFieldBase {
         $css .= "  left: " .  (100 / $breakpoint['columns'] * $item->{$breakpoint['id']}->left) . "%;\n";
         $css .= "  width: " .  (100 / $breakpoint['columns'] * $item->{$breakpoint['id']}->width) . "%;\n";
         $css .= "  height: " .  (100 / $highest * $item->{$breakpoint['id']}->height) . "%;\n";
+        $css .= "  z-index: " .  $item->{$breakpoint['id']}->zIndex . ";\n";
         $css .= "  }\n";
       }
 

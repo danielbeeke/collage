@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Provides collage logic.
+ */
+
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
@@ -12,6 +17,7 @@ use Drupal\Core\Link;
 function collage_preprocess_field(&$variables) {
   $element = $variables['element'];
 
+  // Enables the communication with a brick parent.
   if ($element['#formatter'] == 'bricks_nested') {
     foreach (Element::children($element) as $brick_delta) {
       $element[$brick_delta]['#media']->__set('collage_parent_entity', $variables['element']['#object']);
@@ -35,8 +41,8 @@ function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormState
   foreach (Element::children($element['entities']) as $delta) {
     $widget_row = &$element['entities'][$delta];
 
-    hide($widget_row['options']['view_mode']);
-    hide($widget_row['options']['css_class']);
+//    hide($widget_row['options']['view_mode']);
+//    hide($widget_row['options']['css_class']);
 
     if ($widget_row['depth']['#default_value'] < $current_collage_depth) {
       $collage_started = FALSE;
@@ -90,5 +96,17 @@ function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormState
         ]
       ];
     }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function collage_preprocess_html(&$variables) {
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  if ($route_name == 'collage.entity') {
+    $attached = $variables['page']['#attached'];
+    $variables['page'] = $variables['page']['content'];
+    $variables['page']['#attached'] = $attached;
   }
 }

@@ -72,7 +72,14 @@ class CollageModal extends ControllerBase {
 
       foreach ($bricks as $brick) {
         $modal_contents[$breakpoint['id']]['inner']['collage-item-' . $breakpoint['id'] . '-' . $brick->entity->id()] = [
-          '#markup' => '<span class="ui-widget-header">' . $brick->entity->name->value . '</span>',
+          'iframe' => [
+            '#type' => 'html_tag',
+            '#tag' => 'iframe',
+            '#attributes' => [
+              'style' => 'width: 100%; height: 100%; border: 0;',
+              'src' => '/collage/modal/media/' . $brick->entity->id() . '/teaser',
+            ]
+          ],
           '#type' => 'container',
           '#attributes' => [
             'class' => ['collage-item', 'ui-widget-content'],
@@ -131,5 +138,20 @@ class CollageModal extends ControllerBase {
     }
 
     return $children;
+  }
+
+  public function viewMode ($entity_type, $entity_id, $view_mode) {
+    $entity_storage = \Drupal::entityTypeManager()->getStorage($entity_type);
+    $entity_view_builder = \Drupal::entityTypeManager()->getViewBuilder($entity_type);
+    $entity = $entity_storage->load($entity_id);
+    $render = $entity_view_builder->view($entity, $view_mode);
+
+    return \Drupal::service('bare_html_page_renderer')
+    ->renderBarePage(
+      $render,
+      'Collage entity',
+      'page',
+      []
+    );
   }
 }
