@@ -8,11 +8,14 @@
 namespace Drupal\collage\Controller;
 
 
+use Drupal\Core\Access\AccessResultAllowed;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Ajax\SettingsCommand;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 class CollageModal extends ControllerBase {
 
@@ -33,29 +36,55 @@ class CollageModal extends ControllerBase {
     }
 
     $options = [
-      'dialogClass' => 'popup-dialog-class',
+      'dialogClass' => 'collage-widget-popup',
       'width' => '95%',
       'height' => '95%',
       'resizable' => FALSE
     ];
 
     $modal_contents = [
-      '#prefix' => '<div class="collage-widget-wrapper"><div class="ui-tabs">',
-      '#suffix' => '</div></div>',
-      'tabs' => [
-        '#prefix' => '<ul class="">',
-        '#suffix' => '</ul>'
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['collage-widget-wrapper']
+      ],
+      'inner' => [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['ui-tabs content-header']
+        ],
+        'tabs_wrapper' => [
+          '#type' => 'container',
+          '#attributes' => [
+            'class' => ['layout-container']
+          ],
+          'tabs' => [
+            '#theme' => 'menu_local_tasks',
+            '#primary' => []
+          ]
+        ],
+      ],
+      'content' => [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['layout-container']
+        ],
       ]
     ];
 
     foreach ($breakpoints as $breakpoint) {
-      $modal_contents['tabs'][$breakpoint['id']] = [
-        '#markup' => $breakpoint['label'],
-        '#prefix' => '<li><a href="#' . $breakpoint['id'] . '">',
-        '#suffix' => '</a></li>'
+      $url = Url::fromUserInput('#' . $breakpoint['id']);
+
+      $modal_contents['inner']['tabs_wrapper']['tabs']['#primary'][$breakpoint['id']] = [
+        '#theme' => 'menu_local_task',
+        '#link' => [
+          'title' => $breakpoint['label'],
+          'url' => $url
+        ],
+        '#weight' => 1,
+        '#access' => new AccessResultAllowed(),
       ];
 
-      $modal_contents[$breakpoint['id']] = [
+      $modal_contents['content'][$breakpoint['id']] = [
         '#type' => 'container',
         '#attributes' => [
           'class' => ['collage-widget-tab'],
@@ -71,7 +100,7 @@ class CollageModal extends ControllerBase {
       ];
 
       foreach ($bricks as $brick) {
-        $modal_contents[$breakpoint['id']]['inner']['collage-item-' . $breakpoint['id'] . '-' . $brick->entity->id()] = [
+        $modal_contents['content'][$breakpoint['id']]['inner']['collage-item-' . $breakpoint['id'] . '-' . $brick->entity->id()] = [
           'iframe' => [
             '#type' => 'html_tag',
             '#tag' => 'iframe',

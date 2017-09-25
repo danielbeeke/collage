@@ -108,5 +108,6 @@ function collage_preprocess_html(&$variables) {
     $attached = $variables['page']['#attached'];
     $variables['page'] = $variables['page']['content'];
     $variables['page']['#attached'] = $attached;
+    $variables['page']['#attached']['library'][] = 'collage/iframe';
   }
 }
