@@ -13,6 +13,7 @@
             $(this).parent().addClass('is-active');
             $(this).closest('li').addClass("active").siblings().removeClass("active");
             $($(this).attr('href')).show().siblings('.collage-widget-tab').hide();
+            fixHeight();
           });
 
           $('.tabs a:first', context).click();
@@ -29,7 +30,7 @@
                 left: parseInt($(item).css('left')) / breakpoint.oneColumn,
                 width: parseInt($(item).css('width')) / breakpoint.oneColumn,
                 height: parseInt($(item).css('height')) / breakpoint.oneColumn,
-                zIndex: $(item).css('z-index')
+                zIndex: $('input', item).val()
               };
 
               if (!data[item.dataset.collageItemId]) { data[item.dataset.collageItemId] = {} }
@@ -63,30 +64,41 @@
                 height: itemData.height * breakpointData.oneColumn + 'px',
                 zIndex: itemData.zIndex
               });
+
+              updateIframeSrc(widgetItem, breakpointData);
             })
           });
         };
 
-        var reOrderItems = function (tab, clickedItem) {
-          var zIndexStack = [];
-          $('.collage-item', tab).each(function (itemDelta, item) {
-            if (item !== clickedItem) {
-              zIndexStack.push({
-                item: item,
-                zIndex: $(item).css('z-index') === 'auto' ? 0 : $(item).css('z-index')
-              })
-            }
+        var fixHeight = function () {
+          $.each(settings.collage_breakpoints, function (delta, breakpoint) {
+            var heighest = 0;
+
+            $('.collage-item', breakpoint.tab).each(function (tabItemDelta, tabItem) {
+              var itemHeight = $(tabItem).height();
+              var itemTop = $(tabItem).position().top;
+              heighest = Math.max(itemTop + itemHeight, heighest);
+            });
+
+            var newHeight = heighest + (breakpoint.tab.outerWidth() / breakpoint.columns);
+            breakpoint.tab.height(newHeight);
+          });
+        };
+
+        var roundToColumn = function (valueToRound, oneColumn) {
+          valueToRound = parseInt(valueToRound);
+          return (Math.round(valueToRound / oneColumn) * oneColumn) + 'px';
+        };
+
+        var updateIframeSrc = function (item, breakpoint) {
+          var url = $(item).find('iframe').attr('src');
+          url = url.split('#')[0];
+          url += '#' + JSON.stringify({
+            width: roundToColumn($(item).css('width'), breakpoint.oneColumn),
+            height: roundToColumn($(item).css('height'), breakpoint.oneColumn),
           });
 
-          zIndexStack.sort(function (a, b) {
-            return a.zIndex.localeCompare(b.zIndex);
-          });
-
-          $(zIndexStack).each(function (zIndexDelta, zIndexItem) {
-            $(zIndexItem.item).css('z-index', zIndexDelta)
-          });
-
-          $(clickedItem).css('z-index', zIndexStack.length + 1);
+          $(item).find('iframe').attr('src', url);
         };
 
         var initItems = function () {
@@ -94,40 +106,68 @@
             breakpoint.oneColumn = Math.round(breakpoint.min_width / breakpoint.columns);
             breakpoint.roundedWidth = breakpoint.oneColumn * breakpoint.columns;
             breakpoint.tab = $('.collage-widget-tab-inner[data-breakpoint="' + breakpoint.id + '"]');
+            breakpoint.tab.width(breakpoint.roundedWidth + 'px');
+            breakpoint.tab.css({
+              backgroundImage: 'url("/collage/svg/' + breakpoint.oneColumn + '")'
+            });
 
-            breakpoint.tab
-            .width(breakpoint.roundedWidth + 'px')
-            .height(breakpoint.roundedWidth + 'px');
+            $('.collage-item iframe', breakpoint.tab).css('width', breakpoint.min_width);
             $('.collage-item', breakpoint.tab)
             .css({
-              width: breakpoint.oneColumn + 'px',
-              height: breakpoint.oneColumn + 'px'
+              width: (breakpoint.oneColumn * 3) + 'px',
+              height: (breakpoint.oneColumn * 3) + 'px'
             })
             .draggable({
-              containment: 'parent',
+              // containment: 'parent',
               grid: [breakpoint.oneColumn, breakpoint.oneColumn],
               scroll: true,
               scrollSensitivity: 100,
               stop: function () {
+                // We do this to avoid half grid tiles after dragging.
+                $(this).css({
+                  top: roundToColumn($(this).css('top'), breakpoint.oneColumn),
+                  left: roundToColumn($(this).css('left'), breakpoint.oneColumn),
+                  width: roundToColumn($(this).css('width'), breakpoint.oneColumn),
+                  height: roundToColumn($(this).css('height'), breakpoint.oneColumn)
+                });
+
+                updateIframeSrc(this, breakpoint);
                 updateTextFields();
+              },
+              drag: function (event, ui) {
+                updateIframeSrc(this, breakpoint);
+                fixHeight();
               }
             })
             .resizable({
               handles: 'all',
               grid: breakpoint.oneColumn,
               stop: function () {
+                updateIframeSrc(this, breakpoint);
                 updateTextFields();
+              },
+              resize: function (event, ui) {
+                updateIframeSrc(this, breakpoint);
+                fixHeight();
               }
+            });
+
+            $('.collage-item input', breakpoint.tab).on('change', function () {
+              var newzIndex = $(this).val();
+              var item = $(this).parents('.collage-item')[0];
+              $(item).css('z-index', newzIndex);
+              updateTextFields();
             })
-            .on('mousedown', function () {
-              reOrderItems(breakpoint.tab, this);
-            })
+
           });
         };
 
         initItems();
         initTabs();
         initSavedData();
+        setTimeout(function () {
+          fixHeight();
+        })
       }
 
     }

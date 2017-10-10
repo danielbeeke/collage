@@ -70,31 +70,33 @@ function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormState
       $current_collage_id = $widget_row['#entity']->id();
       $current_collage_depth = $widget_row['depth']['#default_value'];
 
-      $link_url = Url::fromRoute('collage.modal', [
-        'entity_type' => $entity->getEntityTypeId(),
-        'entity_id' => $entity->id(),
-        'field_name' => $field_name,
-        'collage_id' => $current_collage_id,
-      ]);
+      if (isset($entity) && $field_name && $current_collage_id) {
+        $link_url = Url::fromRoute('collage.modal', [
+          'entity_type' => $entity->getEntityTypeId(),
+          'entity_id' => $entity->id(),
+          'field_name' => $field_name,
+          'collage_id' => $current_collage_id,
+        ]);
 
-      $link_url->setOptions([
-        'attributes' => [
-          'class' => ['use-ajax', 'button', 'button--small'],
-          'data-dialog-type' => 'modal',
-        ]
-      ]);
+        $link_url->setOptions([
+          'attributes' => [
+            'class' => ['use-ajax', 'button', 'button--small'],
+            'data-dialog-type' => 'modal',
+          ]
+        ]);
 
-      $widget_row['options']['collage'] = [
-        '#type' => 'container',
-        '#attached' => [
-          'library' => ['collage/widget']
-        ],
-        'link' => [
-          '#type' => 'markup',
-          '#markup' => Link::fromTextAndUrl(t('Edit collage'), $link_url)->toString(),
-          '#attached' => ['library' => ['core/drupal.dialog.ajax']]
-        ]
-      ];
+        $widget_row['options']['collage'] = [
+          '#type' => 'container',
+          '#attached' => [
+            'library' => ['collage/widget']
+          ],
+          'link' => [
+            '#type' => 'markup',
+            '#markup' => Link::fromTextAndUrl(t('Edit collage'), $link_url)->toString(),
+            '#attached' => ['library' => ['core/drupal.dialog.ajax']]
+          ]
+        ];
+      }
     }
   }
 }
@@ -105,6 +107,8 @@ function collage_field_widget_bricks_tree_inline_form_alter(&$element, FormState
 function collage_preprocess_html(&$variables) {
   $route_name = \Drupal::routeMatch()->getRouteName();
   if ($route_name == 'collage.entity') {
+    $breakpoint = \Drupal::routeMatch()->getParameter('breakpoint');
+    $variables['html_attributes']->addClass($breakpoint);
     $attached = $variables['page']['#attached'];
     $variables['page'] = $variables['page']['content'];
     $variables['page']['#attached'] = $attached;

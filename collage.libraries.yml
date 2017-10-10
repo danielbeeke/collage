@@ -12,6 +12,10 @@ widget:
     - core/jquery.ui.draggable
 
 iframe:
+  js:
+    js/collage.iframe.js: {}
   css:
     base:
       css/collage.iframe.css: {}
+  dependencies:
+    - core/jquery

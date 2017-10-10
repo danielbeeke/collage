@@ -22,14 +22,34 @@ class Collage extends DsFieldBase {
     $wrapper_id = Html::getUniqueId('collage-wrapper');
     $configuration = $this->getConfiguration();
     $bricks = $configuration['build']['childs'];
+    $cache_tags = $this->entity()->getCacheTags();
+
+    if (!count($bricks)) { return; }
+
+    $settings_map = [];
+    $parent = $bricks[0]['#media']->__get('collage_parent_entity');
+    $parent_field = $parent->field_bricks;
+
+    foreach ($parent_field as $field_value) {
+      if (isset($field_value->options['collage'])) {
+        $collage_data = json_decode($field_value->options['collage']);
+        if ($collage_data) {
+          $settings_map[$field_value->target_id] = $collage_data;
+        }
+      }
+    }
 
     foreach ($bricks as &$brick) {
       $brick['#attributes']['data-collage-id'] = $brick['#media']->id();
-    }
+      $cache_tags = array_merge($brick['#media']->getCacheTags(), $cache_tags);
 
-    $parent = $bricks[0]['#media']->__get('collage_parent_entity');
-    $parent_field = $parent->field_bricks;
-    $settings_map = [];
+      if (isset($settings_map[$brick['#media']->id()])) {
+        foreach ($settings_map[$brick['#media']->id()] as $breakpoint => $breakpoint_brick_settings) {
+          $brick['#attributes']['data-collage-' . $breakpoint . '-width'] = $breakpoint_brick_settings->width;
+          $brick['#attributes']['data-collage-' . $breakpoint . '-height'] = $breakpoint_brick_settings->height;
+        }
+      }
+    }
 
     $type_configuration = $bundle_label = \Drupal::config('media_entity.bundle.collage')->get('type_configuration');
     $breakpoints_text = $type_configuration['collage_breakpoints'];
@@ -45,13 +65,9 @@ class Collage extends DsFieldBase {
       ];
     }
 
-    foreach ($parent_field as $field_value) {
-      if (isset($field_value->options['collage'])) {
-        $settings_map[$field_value->target_id] = json_decode($field_value->options['collage']);
-      }
-    }
+    $css = '.collage-wrapper { position: relative; width: 100%; float: left; } [data-collage-id] { position: absolute; } ' . "\n";
 
-    $css = '.collage-wrapper { position: relative; width: 100%; float: left; } [data-collage-id] { position: absolute; background-color: red; overflow: hidden; } ' . "\n";
+    $breakpoint_index = 0;
 
     foreach ($breakpoints as $breakpoint) {
       $highest = 0;
@@ -63,7 +79,10 @@ class Collage extends DsFieldBase {
         }
       }
 
-      $css .= '@media screen and (min-width: ' . $breakpoint['min_width'] . "px) {\n";
+      if ($breakpoint_index > 0) {
+        $css .= '@media screen and (min-width: ' . $breakpoint['min_width'] . "px) {\n";
+      }
+
       $ratio = 100 / $breakpoint['columns'] * $highest;
       $css .= '  #' . $wrapper_id . ':after { content: ""; float: left; width: 100%; padding-bottom: ' . $ratio . '%; }' . "\n";
 
@@ -77,7 +96,11 @@ class Collage extends DsFieldBase {
         $css .= "  }\n";
       }
 
-      $css .= "}\n";
+      if ($breakpoint_index > 0) {
+        $css .= "}\n";
+      }
+
+      $breakpoint_index++;
     }
 
 
@@ -96,6 +119,10 @@ class Collage extends DsFieldBase {
         '#value' => $css
       ],
       'collage'
+    ];
+
+    $render['#cache'] = [
+      'tags' => $cache_tags
     ];
 
     return $render;

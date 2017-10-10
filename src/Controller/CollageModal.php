@@ -14,8 +14,8 @@ use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Ajax\SettingsCommand;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\Response;
 
 class CollageModal extends ControllerBase {
 
@@ -100,14 +100,27 @@ class CollageModal extends ControllerBase {
       ];
 
       foreach ($bricks as $brick) {
+        $brick_settings = unserialize($brick->{$field_name . '_options'});
+        $saved_collage = isset($brick_settings['collage']) ? json_decode($brick_settings['collage'], TRUE) : [];
+
+        $view_mode = isset($brick_settings['view_mode']) && $brick_settings['view_mode'] ? $brick_settings['view_mode'] : 'default';
+
         $modal_contents['content'][$breakpoint['id']]['inner']['collage-item-' . $breakpoint['id'] . '-' . $brick->entity->id()] = [
           'iframe' => [
             '#type' => 'html_tag',
             '#tag' => 'iframe',
             '#attributes' => [
               'style' => 'width: 100%; height: 100%; border: 0;',
-              'src' => '/collage/modal/media/' . $brick->entity->id() . '/teaser',
+              'src' => '/collage/viewmode/media/' . $brick->entity->id() . '/' . $view_mode . '/' . $breakpoint['id'],
             ]
+          ],
+          'z_index' => [
+            '#type' => 'number',
+            '#attributes' => [
+              'min' => 1,
+              'max' => 999
+            ],
+            '#value' => isset($saved_collage[$breakpoint['id']]['zIndex']) ? (int) $saved_collage[$breakpoint['id']]['zIndex'] : 1
           ],
           '#type' => 'container',
           '#attributes' => [
@@ -151,29 +164,31 @@ class CollageModal extends ControllerBase {
     $children = [];
 
     foreach ($result as $row) {
-      if ($row->{$field_name . '_depth'} < $start_depth) {
+      if ((int) $row->{$field_name . '_depth'} < $start_depth || ($started && (int) $row->{$field_name . '_depth'} > $start_depth + 1)) {
         $stopped = TRUE;
       }
 
-      if (!$stopped && $started) {
+      if (!$stopped && $started && (int) $row->{$field_name . '_depth'} == $start_depth) {
         $row->entity = entity_load('media', $row->{$field_name . '_target_id'});
         $children[] = $row;
       }
 
       if ($row->{$field_name . '_target_id'} == $collage_id) {
         $started = TRUE;
-        $start_depth = $row->{$field_name . '_depth'};
+        $start_depth = (int) $row->{$field_name . '_depth'} + 1;
       }
     }
 
     return $children;
   }
 
-  public function viewMode ($entity_type, $entity_id, $view_mode) {
+  public function viewMode ($entity_type, $entity_id, $view_mode, $breakpoint) {
     $entity_storage = \Drupal::entityTypeManager()->getStorage($entity_type);
     $entity_view_builder = \Drupal::entityTypeManager()->getViewBuilder($entity_type);
     $entity = $entity_storage->load($entity_id);
     $render = $entity_view_builder->view($entity, $view_mode);
+
+    $render['#attached']['library'][] = 'collage/iframe';
 
     return \Drupal::service('bare_html_page_renderer')
     ->renderBarePage(
@@ -182,5 +197,22 @@ class CollageModal extends ControllerBase {
       'page',
       []
     );
+  }
+
+  public function svg ($one_column_width) {
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="' . $one_column_width  . '" height="' . $one_column_width . '" viewBox="0 0 ' . $one_column_width  . ' ' . $one_column_width . '">';
+    $svg .= '<rect width="1" height="1" x="0" y="0" fill="#444"/>';
+    $svg .= '<rect width="1" height="1" x="' . ($one_column_width - 1) . '" y="' . ($one_column_width - 1) . '" fill="#444"/>';
+    $svg .= '<rect width="1" height="1" x="' . 0 . '" y="' . ($one_column_width - 1) . '" fill="#444"/>';
+    $svg .= '<rect width="1" height="1" x="' . ($one_column_width - 1) . '" y="' . 0 . '" fill="#444"/>';
+
+    $svg .= '</svg>';
+
+    $headers = [
+      'Content-Type' => 'image/svg+xml',
+
+    ];
+
+    return new Response($svg, 200, $headers);
   }
 }

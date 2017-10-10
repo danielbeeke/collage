@@ -1,5 +1,12 @@
 html {
     overflow: hidden;
+    height: 100%;
+    background: transparent;
+}
+
+body {
+    height: 100%;
+    background: transparent;
 }
 
 body > .media {
