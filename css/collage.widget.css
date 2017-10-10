@@ -9,11 +9,10 @@
     color: black;
     overflow: hidden;
     background: transparent;
-    border: 1px solid transparent !important;
 }
 
 .collage-item:hover {
-    border: 1px solid lightblue !important;
+    box-shadow: 0 0 3px black;
 }
 
 .collage-item.ui-widget-content .ui-icon {

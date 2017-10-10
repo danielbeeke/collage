@@ -103,7 +103,6 @@ class Collage extends DsFieldBase {
       $breakpoint_index++;
     }
 
-
     $render = [
       '#type' => 'container',
       '#attributes' => [
